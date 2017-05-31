@@ -118,12 +118,12 @@ MULTISTEPS::delete_record(multisteps_record* record)
     return true;
 }
 
-Packet *
-MULTISTEPS::simple_action(Packet *p_in)
+void
+MULTISTEPS::push(int, Packet *p_in)
 {
     if(!p_in->has_network_header())
     {
-        return p_in;
+        return;
     }
 
     WritablePacket *p = p_in->uniqueify();
@@ -185,8 +185,6 @@ MULTISTEPS::simple_action(Packet *p_in)
             
         }
     }
-
-
 }
 
 CLICK_ENDDECLS

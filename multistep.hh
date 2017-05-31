@@ -37,7 +37,7 @@ class MULTISTEPS : public Element {
     multisteps_record* check_conn_exist(int);
     bool add_record(int, int, int, int);
     bool delete_record(multisteps_record*);
-    Packet *simple_action(Packet *);
+    void *push(int, Packet *);
 
 };
 
