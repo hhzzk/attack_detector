@@ -35,8 +35,8 @@ class SIDEJACKING : public Element {
     bool can_live_reconfigure() const		{ return true; }
 
     int initialize(ErrorHandler *errh)
-    sidejacking_record* check_conn_exist(int);
-    bool add_record(int, int, int, int);
+    sidejacking_record* check_record_exist(int);
+    bool add_record(int, char*, char*);
     bool delete_record(sidejacking_record*);
     void push(int port, Packet*);
 };

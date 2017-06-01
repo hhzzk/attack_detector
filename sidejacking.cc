@@ -74,7 +74,7 @@ SIDEJACKING::check_record_exist(char* cookie)
 
 // Use head insert
 bool
-SIDEJACKING::add_record(int ip, char* user_agent, char* cookie, int start, int expiration)
+SIDEJACKING::add_record(int ip, char* user_agent, char* cookie)
 {
     sidejacking_record* record = NULL;
 
@@ -137,7 +137,7 @@ SIDEJACKING::push(int, Packet *p_in)
     record = check_record_exist(cookie)         
     if(!record)
     {
-        add_record(ip, user_agent, cookie, Timestamp::now(), Timestamp::now() + EXPIRATION);
+        add_record(ip, user_agent, cookie);
         return;
     }
     if(record->expiration_time < Timestamp::now())
