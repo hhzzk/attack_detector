@@ -16,7 +16,8 @@ typedef struct dnstunnels_record
 
 #define PROTOCOL_SSH 2222
 #define PROTOCOL_IRC 6697
-#define EXPIRATION 30
+#define EXPIRATION 300
+#define COUNT_THRESHOLD 100
 
 class DNSTUNNELS : public Element {
 

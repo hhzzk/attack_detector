@@ -51,9 +51,9 @@ DNSTUNNELS::initialize(ErrorHandler *errh)
     return 0;
 }
 
-// Check if the record is exists
+// Check if the host ip is exists in the record
 dnstunnels_record* 
-DNSTUNNELS::check_record_exist(char* cookie)
+DNSTUNNELS::check_hostip_exist(int host_ip)
 {
     dnstunnels_record *tmp = _record_head;
 
@@ -64,7 +64,28 @@ DNSTUNNELS::check_record_exist(char* cookie)
 
     while(tmp)
     {
-        if(strcmp(tmp->cookie, cookie) == 0) 
+        if(tmp->host_ip == host_ip) 
+            return tmp;
+        tmp = tmp->next;
+    }
+    
+    return NULL;
+}
+
+// Check if the record is exists
+dnstunnels_record* 
+DNSTUNNELS::check_record_exist(int awnser_ip)
+{
+    dnstunnels_record *tmp = _record_head;
+
+    if(!tmp)
+    {
+        return NULL;
+    }
+
+    while(tmp)
+    {
+        if(tmp->anwser_ip == anwser_ip) 
             return tmp;
         tmp = tmp->next;
     }
@@ -134,39 +155,35 @@ DNSTUNNELS::push(int, Packet *p_in)
 
     dnstunnels_record* record = NULL;
 
-    record = check_record_exist(anwser_ip)         
-    if(!record)
+    if(event_type == EVENT_DNS_REPLY)
     {
-        add_record(host_ip, anwser_ip, Timestamp::now(), Timestamp::now() + EXPIRATION);
-        return;
-    }
-    if(record->expiration_time < Timestamp::now())
-    {
-        delete_record(record);
-        record = NULL;
-    }
-
-    if(ip == record->ip)
-    {
-        if(user_agent == record->user_agent)        
+        record = check_record_exist(anwser_ip)         
+        if(!record)
         {
-             update cookie 
+            add_record(host_ip, anwser_ip, Timestamp::now(), Timestamp::now() + EXPIRATION);
+            return;
         }
-        else
+        if(record->expiration_time < Timestamp::now())
         {
             delete_record(record);
-            report session cookie reuse; 
+            record = NULL;
+            return;
+        }
 
+        record->count++;
+        if(record->count > COUNT_THRESHOLD)
+        {
+            delete_record(record);
+            alarm;
         }
+
     }
-    else
+    else if(event_type == EVENT_IP_REQUEST)
     {
-        if(user_agent == record->user_agent)
+        record = check_hostip_exist(host_ip);         
+        if(record)
         {
-        }
-        else
-        {
-            alarm DNSTUNNELS; 
+            delete_record(record); 
         }
     }
 }
