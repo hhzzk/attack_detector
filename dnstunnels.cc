@@ -1,9 +1,8 @@
 /*
- * DNSTUNNELS.{cc,hh} -- element used to detect trojan detector 
- * Eddie Kohler
+ * DNSTUNNELS.{cc,hh} -- element used to detect dns tunnels attack 
+ * HHZZK 
  *
- * Copyright (c) 2000 Massachusetts Institute of Technology
- * Copyright (c) 2008 Meraki, Inc.
+ * Copyright (c) 2017 HHZZK
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -17,23 +16,24 @@
  */
 
 #include <click/config.h>
-#include "dnstunnels.hh"
 #include <click/args.hh>
 #include <click/packet_anno.hh>
 #include <clicknet/tcp.h>
 #include <clicknet/udp.h>
 #include <clicknet/ip.h>
 #include <stdio.h>
+
+#include "dnstunnels.hh"
+
 CLICK_DECLS
 
-DNSTUNNELS::SIDEJACKING()
+DNSTUNNELS::DNSTUNNELS()
 {
 }
 
-DNSTUNNELS::~SIDEJACKING()
+DNSTUNNELS::~DNSTUNNELS()
 {
 }
-
 
 int
 DNSTUNNELS::initialize(ErrorHandler *errh)
@@ -139,24 +139,17 @@ DNSTUNNELS::delete_record(multisteps_record* record)
     return true;
 }
 
-void *
-DNSTUNNELS::push(int, Packet *p_in)
+Packet *
+DNSTUNNELS::pull(int)
 {
-    if(!p_in->has_network_header())
+    WritablePacket *p = input().pull()
+    event_t *event = extract_event(p);
+    DNSDataModel model(_event->data);
+    if(model.validate(_event->data + _event->event_len))
     {
-        return;
-    }
+        uint32_t ip = get_value<DNSDataModel, DNS_FIELD_RECORD_IP>(model);
+        char *qname = get_field<DNSSaraModel, DNS_FIELD_QNAME>(model);
 
-    WritablePacket *p = p_in->uniqueify();
-    click_ip *iph = p->ip_header();
-    int plength = p->length();
-    dnstunnels_flow flow;
-    printf("iph->ip_p is %d\n", iph->ip_p);   
-
-    dnstunnels_record* record = NULL;
-
-    if(event_type == EVENT_DNS_REPLY)
-    {
         record = check_record_exist(anwser_ip)         
         if(!record)
         {
@@ -174,17 +167,34 @@ DNSTUNNELS::push(int, Packet *p_in)
         if(record->count > COUNT_THRESHOLD)
         {
             delete_record(record);
-            alarm;
+            LOGE("Suspicious! record count is %d", recoud->count);
+            p->kill();
+        }
+        else
+        {
+            int query_len = strlen(qname);
+            int i = 0;
+            int num_count = 0;
+            if(query_len > QUERY_LEN_THRESHOLD)
+            {
+                for(i=0; i<query_len; i++)
+                {
+                    if(qname[i] > '0' && qname[i] < '9')
+                        num_count++;
+                }
+            }
+
+            if(num_count*10/query_len > PERCENTAGE_OF_COUNT)
+            {
+                LOGE("Suspicious! Numberical charicter overload");
+                p->kill();
+            }
         }
 
     }
-    else if(event_type == EVENT_IP_REQUEST)
+    else
     {
-        record = check_hostip_exist(host_ip);         
-        if(record)
-        {
-            delete_record(record); 
-        }
+        LOGE("DataModel invalid!");
     }
 }
 

@@ -14,10 +14,9 @@ typedef struct dnstunnels_record
     dnstunnels_record* next;
 }dnstunnels_record; 
 
-#define PROTOCOL_SSH 2222
-#define PROTOCOL_IRC 6697
 #define EXPIRATION 300
 #define COUNT_THRESHOLD 100
+#define REQUEST_COUNT_THRESHOLD 100
 
 class DNSTUNNELS : public Element {
 
@@ -38,7 +37,7 @@ class DNSTUNNELS : public Element {
     dnstunnels_record* check_conn_exist(int);
     bool add_record(int, int, int, int);
     bool delete_record(dnstunnels_record*);
-    void push(int port, Packet*);
+    Packet *pull(int port);
 };
 
 CLICK_ENDDECLS
