@@ -22,8 +22,11 @@
 #include <clicknet/udp.h>
 #include <clicknet/ip.h>
 #include <stdio.h>
+#include <click/timer.hh>
 
 #include "dnstunnels.hh"
+#include "event.hh"
+#include "datamodel.hh"
 
 CLICK_DECLS
 
@@ -53,7 +56,7 @@ DNSTUNNELS::initialize(ErrorHandler *errh)
 
 // Check if the host ip is exists in the record
 dnstunnels_record* 
-DNSTUNNELS::check_hostip_exist(int host_ip)
+DNSTUNNELS::check_hostip_exist(uint32_t host_ip)
 {
     dnstunnels_record *tmp = _record_head;
 
@@ -72,30 +75,9 @@ DNSTUNNELS::check_hostip_exist(int host_ip)
     return NULL;
 }
 
-// Check if the record is exists
-dnstunnels_record* 
-DNSTUNNELS::check_record_exist(int awnser_ip)
-{
-    dnstunnels_record *tmp = _record_head;
-
-    if(!tmp)
-    {
-        return NULL;
-    }
-
-    while(tmp)
-    {
-        if(tmp->anwser_ip == anwser_ip) 
-            return tmp;
-        tmp = tmp->next;
-    }
-    
-    return NULL;
-}
-
 // Use head insert
 bool
-DNSTUNNELS::add_record(int ip, char* user_agent, char* cookie, int start, int expiration)
+DNSTUNNELS::add_record(int host_ip, int expiration)
 {
     dnstunnels_record* record = NULL;
 
@@ -107,9 +89,7 @@ DNSTUNNELS::add_record(int ip, char* user_agent, char* cookie, int start, int ex
     {
         record->next = _record_head->next;
         _record_head->next = record;
-        record->conn_id = conn_id;
-        record->step = step;
-        record->start_time = start;
+        record->count = 1;
         record->expiration_time = expiration;
 
         return true;
@@ -119,7 +99,7 @@ DNSTUNNELS::add_record(int ip, char* user_agent, char* cookie, int start, int ex
 }
 
 bool
-DNSTUNNELS::delete_record(multisteps_record* record)
+DNSTUNNELS::delete_record(dnstunnels_record* record)
 {
     dnstunnels_record* pre_record = _record_head;
     dnstunnels_record* tmp = _record_head;
@@ -150,12 +130,13 @@ DNSTUNNELS::pull(int)
         uint32_t ip = get_value<DNSDataModel, DNS_FIELD_RECORD_IP>(model);
         char *qname = get_field<DNSSaraModel, DNS_FIELD_QNAME>(model);
 
-        record = check_record_exist(anwser_ip)         
+        record = check_record_exist(ip)         
         if(!record)
         {
-            add_record(host_ip, anwser_ip, Timestamp::now(), Timestamp::now() + EXPIRATION);
+            add_record(ip, Timestamp::now() + Timestamp::make_sec(EXPIRATION));
             return;
         }
+        //Check if the record is expired
         if(record->expiration_time < Timestamp::now())
         {
             delete_record(record);
@@ -190,7 +171,6 @@ DNSTUNNELS::pull(int)
                 p->kill();
             }
         }
-
     }
     else
     {

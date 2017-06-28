@@ -7,9 +7,7 @@ CLICK_DECLS
 typedef struct dnstunnels_record
 {
     int host_ip;
-    int anwser_ip;
     int count;
-    int start_time;
     int expiration_time;
     dnstunnels_record* next;
 }dnstunnels_record; 
@@ -34,8 +32,8 @@ class DNSTUNNELS : public Element {
     bool can_live_reconfigure() const		{ return true; }
 
     int initialize(ErrorHandler *errh)
-    dnstunnels_record* check_conn_exist(int);
-    bool add_record(int, int, int, int);
+    dnstunnels_record* check_hostip_exist(uint32_t host_ip)
+    bool add_record(int, int);
     bool delete_record(dnstunnels_record*);
     Packet *pull(int port);
 };
