@@ -1,19 +1,23 @@
 #ifndef CLICK_DNSTUNNELS_HH
 #define CLICK_DNSTUNNELS_HH
+
+#include <click/timer.hh>
 #include <click/element.hh>
 #include <click/ipaddress.hh>
 CLICK_DECLS
 
 typedef struct dnstunnels_record
 {
-    int host_ip;
+    uint32_t host_ip;
     int count;
-    int expiration_time;
+    Timestamp expiration_time;
     dnstunnels_record* next;
 }dnstunnels_record; 
 
 #define EXPIRATION 300
 #define COUNT_THRESHOLD 100
+#define PERCENTAGE_OF_COUNT 2
+#define QUERY_LEN_THRESHOLD 27
 #define REQUEST_COUNT_THRESHOLD 100
 
 class DNSTUNNELS : public Element {
@@ -31,9 +35,9 @@ class DNSTUNNELS : public Element {
 
     bool can_live_reconfigure() const		{ return true; }
 
-    int initialize(ErrorHandler *errh)
-    dnstunnels_record* check_hostip_exist(uint32_t host_ip)
-    bool add_record(int, int);
+    int initialize(ErrorHandler *errh);
+    dnstunnels_record* check_hostip_exist(uint32_t host_ip);
+    bool add_record(uint32_t, Timestamp);
     bool delete_record(dnstunnels_record*);
     Packet *pull(int port);
 };

@@ -15,18 +15,21 @@
  * legally binding.
  */
 
+#include <stdio.h>
+//#include <click/args.hh>
+#include <clicknet/ip.h>
+#include <click/logger.h>
 #include <click/config.h>
-#include <click/args.hh>
-#include <click/packet_anno.hh>
 #include <clicknet/tcp.h>
 #include <clicknet/udp.h>
-#include <clicknet/ip.h>
-#include <stdio.h>
+#include <clicknet/dns.h>
 #include <click/timer.hh>
+#include <click/packet_anno.hh>
 
-#include "dnstunnels.hh"
 #include "event.hh"
 #include "datamodel.hh"
+#include "dnstunnels.hh"
+#include "dnsanalyzer.hh"
 
 CLICK_DECLS
 
@@ -46,10 +49,10 @@ DNSTUNNELS::initialize(ErrorHandler *errh)
 
     _record_head = (dnstunnels_record *)malloc(sizeof(dnstunnels_record));
     if(!_record_head)
-        retrun -1;
+        return -1;
 
     _record_head->next = NULL;
-    _record_head->conn_id = -1;
+    _record_head->count = -1;
 
     return 0;
 }
@@ -77,7 +80,7 @@ DNSTUNNELS::check_hostip_exist(uint32_t host_ip)
 
 // Use head insert
 bool
-DNSTUNNELS::add_record(int host_ip, int expiration)
+DNSTUNNELS::add_record(uint32_t host_ip, Timestamp expiration)
 {
     dnstunnels_record* record = NULL;
 
@@ -102,7 +105,6 @@ bool
 DNSTUNNELS::delete_record(dnstunnels_record* record)
 {
     dnstunnels_record* pre_record = _record_head;
-    dnstunnels_record* tmp = _record_head;
 
     while(pre_record->next)
     {
@@ -122,33 +124,35 @@ DNSTUNNELS::delete_record(dnstunnels_record* record)
 Packet *
 DNSTUNNELS::pull(int)
 {
-    WritablePacket *p = input().pull()
-    event_t *event = extract_event(p);
+    dnstunnels_record *record = NULL;
+    Packet *pp = input(0).pull();
+    WritablePacket *p = pp->uniqueify();  
+    event_t *_event = extract_event(p);
     DNSDataModel model(_event->data);
     if(model.validate(_event->data + _event->event_len))
     {
         uint32_t ip = get_value<DNSDataModel, DNS_FIELD_RECORD_IP>(model);
-        char *qname = get_field<DNSSaraModel, DNS_FIELD_QNAME>(model);
+        char *qname = get_field<DNSDataModel, DNS_FIELD_QNAME>(model);
 
-        record = check_record_exist(ip)         
+        record = check_hostip_exist(ip);         
         if(!record)
         {
             add_record(ip, Timestamp::now() + Timestamp::make_sec(EXPIRATION));
-            return;
+            return p;
         }
         //Check if the record is expired
         if(record->expiration_time < Timestamp::now())
         {
             delete_record(record);
             record = NULL;
-            return;
+            return p;
         }
 
         record->count++;
         if(record->count > COUNT_THRESHOLD)
         {
             delete_record(record);
-            LOGE("Suspicious! record count is %d", recoud->count);
+            LOGE("Suspicious! record count is %d", record->count);
             p->kill();
         }
         else
