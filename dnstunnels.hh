@@ -14,7 +14,7 @@ typedef struct dnstunnels_record
     dnstunnels_record* next;
 }dnstunnels_record; 
 
-#define EXPIRATION 300
+#define EXPIRATION 100
 #define COUNT_THRESHOLD 100
 #define PERCENTAGE_OF_COUNT 2
 #define QUERY_LEN_THRESHOLD 27

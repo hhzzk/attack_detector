@@ -149,9 +149,10 @@ DNSTUNNELS::pull(int port)
             return p;
         }
         //Check if the record is expired
-        if((uint32_t)Timestamp::now().sec() - record->create_time < EXPIRATION)
+        if((uint32_t)Timestamp::now().sec() - record->create_time > EXPIRATION)
         {
             delete_record(record);
+            LOGE("record deleted!");
             record = NULL;
             return p;
         }
@@ -161,13 +162,14 @@ DNSTUNNELS::pull(int port)
         {
             delete_record(record);
             LOGE("Suspicious! record count is %d", record->count);
-            p->kill();
+            return p;
         }
         else
         {
             int query_len = strlen(qname);
             int i = 0;
             int num_count = 0;
+            LOGE("query len is %d", query_len);
             if(query_len > QUERY_LEN_THRESHOLD)
             {
                 for(i=0; i<query_len; i++)
@@ -180,7 +182,7 @@ DNSTUNNELS::pull(int port)
             if(num_count*10/query_len > PERCENTAGE_OF_COUNT)
             {
                 LOGE("Suspicious! Numberical charicter overload");
-                p->kill();
+                return p;
             }
         }
     }
