@@ -10,7 +10,7 @@ typedef struct dnstunnels_record
 {
     uint32_t host_ip;
     int count;
-    Timestamp expiration_time;
+    uint32_t create_time;
     dnstunnels_record* next;
 }dnstunnels_record; 
 
@@ -35,11 +35,12 @@ class DNSTUNNELS : public Element {
 
     bool can_live_reconfigure() const		{ return true; }
 
-    int initialize(ErrorHandler *errh);
+    int configure(Vector<String> &conf, ErrorHandler *errh);
     dnstunnels_record* check_hostip_exist(uint32_t host_ip);
-    bool add_record(uint32_t, Timestamp);
+    bool add_record(uint32_t, uint32_t);
     bool delete_record(dnstunnels_record*);
     Packet *pull(int port);
+
 };
 
 CLICK_ENDDECLS

@@ -42,7 +42,7 @@ DNSTUNNELS::~DNSTUNNELS()
 }
 
 int
-DNSTUNNELS::initialize(ErrorHandler *errh)
+DNSTUNNELS::configure(Vector<String> &conf, ErrorHandler *errh)
 {
     if(_record_head)
         return 0;
@@ -63,11 +63,6 @@ DNSTUNNELS::check_hostip_exist(uint32_t host_ip)
 {
     dnstunnels_record *tmp = _record_head;
 
-    if(!tmp)
-    {
-        return NULL;
-    }
-
     while(tmp)
     {
         if(tmp->host_ip == host_ip) 
@@ -80,11 +75,11 @@ DNSTUNNELS::check_hostip_exist(uint32_t host_ip)
 
 // Use head insert
 bool
-DNSTUNNELS::add_record(uint32_t host_ip, Timestamp expiration)
+DNSTUNNELS::add_record(uint32_t host_ip, uint32_t create)
 {
     dnstunnels_record* record = NULL;
 
-    if(_record_head)
+    if(!_record_head)
         return false;
 
     record = (dnstunnels_record *)malloc(sizeof(dnstunnels_record));
@@ -92,8 +87,9 @@ DNSTUNNELS::add_record(uint32_t host_ip, Timestamp expiration)
     {
         record->next = _record_head->next;
         _record_head->next = record;
+        record->host_ip = host_ip;
         record->count = 1;
-        record->expiration_time = expiration;
+        record->create_time = create;
 
         return true;
     }
@@ -122,11 +118,16 @@ DNSTUNNELS::delete_record(dnstunnels_record* record)
 }
 
 Packet *
-DNSTUNNELS::pull(int)
+DNSTUNNELS::pull(int port)
 {
+    Packet *p = input(0).pull();
+    if(p == NULL)
+    {
+        LOGE("Package is null");
+        return NULL;
+    }
+    click_ip *iph = p->ip_header();
     dnstunnels_record *record = NULL;
-    Packet *pp = input(0).pull();
-    WritablePacket *p = pp->uniqueify();  
     event_t *_event = extract_event(p);
     DNSDataModel model(_event->data);
     if(model.validate(_event->data + _event->event_len))
@@ -137,11 +138,18 @@ DNSTUNNELS::pull(int)
         record = check_hostip_exist(ip);         
         if(!record)
         {
-            add_record(ip, Timestamp::now() + Timestamp::make_sec(EXPIRATION));
+            if(add_record(ip, (uint32_t)Timestamp::now().sec()))
+            {
+                LOGE("Adding new record success, ip = %u", ip);
+            }
+            else
+            {
+                LOGE("Adding new record failure, ip = %u", ip);
+            }
             return p;
         }
         //Check if the record is expired
-        if(record->expiration_time < Timestamp::now())
+        if((uint32_t)Timestamp::now().sec() - record->create_time < EXPIRATION)
         {
             delete_record(record);
             record = NULL;
