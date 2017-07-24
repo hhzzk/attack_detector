@@ -190,6 +190,7 @@ DNSTUNNELS::pull(int port)
     {
         LOGE("DataModel invalid!");
     }
+    return p;
 }
 
 CLICK_ENDDECLS

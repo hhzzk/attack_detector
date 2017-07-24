@@ -17,7 +17,7 @@ typedef struct dnstunnels_record
 #define EXPIRATION 100
 #define COUNT_THRESHOLD 100
 #define PERCENTAGE_OF_COUNT 2
-#define QUERY_LEN_THRESHOLD 27
+#define QUERY_LEN_THRESHOLD 52
 #define REQUEST_COUNT_THRESHOLD 100
 
 class DNSTUNNELS : public Element {
