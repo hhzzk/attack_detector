@@ -6,7 +6,7 @@ CLICK_DECLS
 
 typedef struct sidejacking_record
 {
-    int ip;
+    uint32_t ip;
     char* user_agent;
     char* cookie;
     sidejacking_record* next;
@@ -15,6 +15,7 @@ typedef struct sidejacking_record
 #define PROTOCOL_SSH 2222
 #define PROTOCOL_IRC 6697
 #define EXPIRATION 30
+#define DHCP_CONTEXT_AVALIABLE 0
 
 class SIDEJACKING : public Element {
 
@@ -31,7 +32,7 @@ class SIDEJACKING : public Element {
 
     bool can_live_reconfigure() const		{ return true; }
 
-    int initialize(ErrorHandler *errh)
+    int initialize(ErrorHandler *errh);
     sidejacking_record* check_cookie_exist(char*);
     bool add_record(char*, int, char*);
     Packet* pull(int port);

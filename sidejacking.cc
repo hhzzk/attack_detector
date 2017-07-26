@@ -15,14 +15,19 @@
  * legally binding.
  */
 
+#include <stdio.h>
+#include <clicknet/ip.h>
 #include <click/config.h>
-#include "sidejacking.hh"
-#include <click/args.hh>
-#include <click/packet_anno.hh>
 #include <clicknet/tcp.h>
 #include <clicknet/udp.h>
-#include <clicknet/ip.h>
-#include <stdio.h>
+#include <click/logger.h>
+#include <click/packet_anno.hh>
+
+#include "event.hh"
+#include "datamodel.hh"
+#include "sidejacking.hh"
+#include "httpanalyzer.hh"
+
 CLICK_DECLS
 
 SIDEJACKING::SIDEJACKING()
@@ -40,12 +45,11 @@ SIDEJACKING::initialize(ErrorHandler *errh)
     if(_record_head)
         return 0;
 
-    _record_head = (sidejacking_record *)malloc(sizeof(multisteps_record));
+    _record_head = (sidejacking_record *)malloc(sizeof(sidejacking_record));
     if(!_record_head)
-        retrun -1;
+        return -1;
 
     _record_head->next = NULL;
-    _record_head->conn_id = -1;
 
     return 0;
 }
@@ -113,12 +117,12 @@ SIDEJACKING::pull(int port)
         char* user_agent = get_field<HttpDataModel, HTTP_FIELD_USRAGENT>(model);
         LOGE("Sidejacking: model get useragent: %s", user_agent);
 
-        uint32_t ip _event->connect.src_ip;
+        uint32_t ip = (uint32_t)_event->connect.src_ip.s_addr;
 
-        record = check_cookie_exist(cookie)         
+        record = check_cookie_exist(cookie); 
         if(!record)
         {
-            if(add_record(cookie, ip, user_agent)
+            if(add_record(cookie, ip, user_agent))
             {
                 LOGE("Adding new record success, cookie = %s, ip = %u, user agent = %s", cookie, ip, user_agent);
             }
@@ -167,11 +171,9 @@ SIDEJACKING::pull(int port)
     else
     {
         LOGE("Sidejacking: the DataModel is invalid for the data, field len %u", model.len());
-        LOGE("Sidejacking: model._begin %u", model._begin - event->data);
-        LOGE("Sidejacking: event_len %u", event->event_len);
     }
 
-    dealloc_event(event);
+    dealloc_event(_event);
 
     return p;
 }
