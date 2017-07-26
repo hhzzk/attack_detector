@@ -9,11 +9,8 @@ typedef struct sidejacking_record
     int ip;
     char* user_agent;
     char* cookie;
-    int start_time;
-    int expiration_time;
     sidejacking_record* next;
 }sidejacking_record; 
-
 
 #define PROTOCOL_SSH 2222
 #define PROTOCOL_IRC 6697
@@ -35,10 +32,9 @@ class SIDEJACKING : public Element {
     bool can_live_reconfigure() const		{ return true; }
 
     int initialize(ErrorHandler *errh)
-    sidejacking_record* check_record_exist(int);
-    bool add_record(int, char*, char*);
-    bool delete_record(sidejacking_record*);
-    void push(int port, Packet*);
+    sidejacking_record* check_cookie_exist(char*);
+    bool add_record(char*, int, char*);
+    Packet* pull(int port);
 };
 
 CLICK_ENDDECLS
