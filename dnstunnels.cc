@@ -126,7 +126,7 @@ DNSTUNNELS::pull(int port)
         LOGE("Package is null");
         return NULL;
     }
-    click_ip *iph = p->ip_header();
+
     dnstunnels_record *record = NULL;
     event_t *_event = extract_event(p);
     DNSDataModel model(_event->data);
