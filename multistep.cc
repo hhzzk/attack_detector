@@ -16,14 +16,17 @@
  * legally binding.
  */
 
+#include <stdio.h>
+#include <clicknet/ip.h>
 #include <click/config.h>
-#include "multisteps.hh"
-#include <click/args.hh>
-#include <click/packet_anno.hh>
 #include <clicknet/tcp.h>
 #include <clicknet/udp.h>
-#include <clicknet/ip.h>
-#include <stdio.h>
+#include <click/packet_anno.hh>
+
+#include "event.hh"
+#include "datamodel.hh"
+#include "multisteps.hh"
+
 CLICK_DECLS
 
 MULTISTEPS::MULTISTEPS()
@@ -51,21 +54,25 @@ MULTISTEPS::initialize(ErrorHandler *errh)
     return 0;
 }
 
-// Check if the connection is exists
+// Check if the ip is exists in the record
 multisteps_record* 
-MULTISTEPS::check_conn_exist(int conn_id)
+MULTISTEPS::check_record_exist(int32_t ip)
 {
     multisteps_record *tmp = _record_head;
 
-    if(!tmp)
-    {
-        return NULL;
-    }
-
     while(tmp)
     {
-        if(tmp->conn_id == conn_id) 
-            return tmp;
+        if(tmp->ip == ip) 
+        {
+            //Check if the record is expired
+            if((uint32_t)Timestamp::now().sec() - tmp->create_time > EXPIRATION)
+            {
+                delete_record(tmp); 
+                return NULL;
+            }
+            else 
+                return tmp;
+        }
         tmp = tmp->next;
     }
     
@@ -74,11 +81,11 @@ MULTISTEPS::check_conn_exist(int conn_id)
 
 // Use head insert
 bool
-MULTISTEPS::add_record(int conn_id, int step, int start, int expiration)
+MULTISTEPS::add_record(int32_t ip, int32_t time, int32_t steps)
 {
     multisteps_record* record = NULL;
 
-    if(_record_head)
+    if(!_record_head)
         return false;
 
     record = (multisteps_record *)malloc(sizeof(multisteps_record));
@@ -86,10 +93,9 @@ MULTISTEPS::add_record(int conn_id, int step, int start, int expiration)
     {
         record->next = _record_head->next;
         _record_head->next = record;
-        record->conn_id = conn_id;
-        record->step = step;
-        record->start_time = start;
-        record->expiration_time = expiration;
+        record->ip= ip;
+        record->steps = steps;
+        record->create_time = time;
 
         return true;
     }
@@ -119,71 +125,67 @@ MULTISTEPS::delete_record(multisteps_record* record)
 }
 
 void
-MULTISTEPS::push(int, Packet *p_in)
+MULTISTEPS::pull(int port)
 {
-    if(!p_in->has_network_header())
+    Packet *p = input(0).pull();
+    if(p == NULL)
     {
-        return;
+        LOGE("Package is null");
+        return NULL;
     }
-
-    WritablePacket *p = p_in->uniqueify();
-    click_ip *iph = p->ip_header();
-    int plength = p->length();
-    MULTISTEPS_flow flow;
-    printf("iph->ip_p is %d\n", iph->ip_p);   
 
     multisteps_record* record = NULL;
-
-    record = check_conn_exist(conn_id)         
-    if(record->expiration_time < Timestamp::now())
+    event_t *_event = extract_event(p);
+    DNSDataModel model(_event->data);
+    if(model.validate(_event->data + _event->event_len))
     {
-        delete_record(record);
-        record = NULL;
-    }
+        uint32_t ip = (uint32_t)_event->connect.dst_ip.s_addr;
 
-    if(protocol == PROTOCOL_SSH)
-    {
-        // If record exist, reset start time
-        if(record)
+        if(_event->event_type == SSH_AUTH_ATTEMPED)
         {
-            record->start_time = Timestamp::now() 
+            record = check_record_exist(ip);         
+            if(!record)
+            {
+                if(add_record(ip, (uint32_t)Timestamp::now().sec()), 1)
+                {
+                    LOGE("Adding new record success, ip = %u", ip);
+                }
+                else
+                {
+                    LOGE("Adding new record failure, ip = %u", ip);
+                }
+                return p;
+            }
+        }
+        else if(_event->event_type == HTTP_REQUEST) 
+        {
+            record = check_record_exist(ip);         
+            if(record)
+            {
+                if(record->steps == 1)
+                {
+                    record->steps = 2;
+                }
+            }
+        }
+        else if(_event->event_type == FTP_REQUEST ||
+                _event->event_type == FTP_DATA_ACTIVITY)
+        {
+            record = check_record_exist(ip);         
+            if(record)
+            {
+                if(record->steps == 2)
+                    record->steps = 3;
+                else if(record->steps == 3)
+                    LOGE("Mutistep Attack!!");
+            }
+            return p;
         }
         else
         {
-            add_record(conn_id, 1, Timestamp::now(), Timestamp::now() + 30sec)  
+            LOGE("Error event type");
         }
-    }
-    else if(protocol == PROTOCOL_IRC)
-    {
-        if(record)
-        {
-            if(record->step == 4)
-            {
-                delete_record(record);
-                printf("irc!!\n");
-                printf("ATTACK!!\n");
-            }
-        }
-    }
-    else if(ftp request)
-    {
-        if(record)
-        {
-            if(record->step == 2 || record->step == 3)
-            {
-                record->step += 1; 
-                printf("ftp request!!\n");
-            }
-        }
-    }
-    else if(http request)
-    {
-        if(record->step == 2)
-        {
-            record->step += 1;
-            printf("http request!!\n");
-            
-        }
+
     }
 }
 

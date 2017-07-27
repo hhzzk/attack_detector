@@ -6,16 +6,12 @@ CLICK_DECLS
 
 typedef struct multisteps_record
 {
-    int conn_id;
-    int step;
-    int start_time;
-    int expiration_time;
+    int32_t ip;
+    int32_t steps;
+    int32_t create_time;
     multisteps_record* next;
 }multisteps_record; 
 
-
-#define PROTOCOL_SSH 2222
-#define PROTOCOL_IRC 6697
 #define EXPIRATION 30
 
 class MULTISTEPS : public Element {
@@ -34,10 +30,10 @@ class MULTISTEPS : public Element {
     bool can_live_reconfigure() const		{ return true; }
 
     int initialize(ErrorHandler *errh)
-    multisteps_record* check_conn_exist(int);
-    bool add_record(int, int, int, int);
+    multisteps_record* check_record_exist(int32_t);
+    bool add_record(int32_t, int32_t, int32_t);
     bool delete_record(multisteps_record*);
-    void *push(int, Packet *);
+    void *pull(int);
 
 };
 
