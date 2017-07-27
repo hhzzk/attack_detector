@@ -77,18 +77,19 @@ SIDEJACKING::add_record(char *cookie, int ip, char* user_agent)
 {
     sidejacking_record* record = NULL;
 
-    if(_record_head)
+    if(!_record_head)
         return false;
 
+    //LOGE("add_record: user_agent = %s", user_agent);
     record = (sidejacking_record *)malloc(sizeof(sidejacking_record));
     if(record)
     {
         record->next = _record_head->next;
         _record_head->next = record;
         record->cookie = (char *) malloc(strlen(cookie));
-        strcpy(cookie, record->cookie);
+        strcpy(record->cookie, cookie);
         record->user_agent = (char *) malloc(strlen(user_agent));
-        strcpy(user_agent, record->user_agent);
+        strcpy(record->user_agent, user_agent);
         record->ip = ip;
 
         return true;
@@ -135,29 +136,30 @@ SIDEJACKING::pull(int port)
 
         if(ip == record->ip)
         {
-            if(user_agent == record->user_agent)        
+            if(strcmp(record->cookie, cookie) == 0) 
             {
                 LOGE("Record : cookie = %s, ip = %u, user agent = %s", cookie, ip, user_agent);
             }
             else
             {
-                record->user_agent = user_agent;
+                strcpy(record->user_agent, user_agent);
                 LOGE("Session cookie reuse: cookie = %s, ip = %u, user agent = %s", cookie, ip, user_agent);
-
             }
         }
         else
         {
-            if(user_agent == record->user_agent)
+            //LOGE("Record info : cookie = %s, ip = %u, user agent = %s", record->cookie, record->ip, record->user_agent);
+            if(strncmp(record->user_agent, user_agent, strlen(user_agent)) == 0) 
             {
                 if(DHCP_CONTEXT_AVALIABLE)
                 {
-                
+                    LOGE("DHCP avaliable");
                 }
                 else
                 {
-                    return p;
+                    LOGE("DHCP not avaliable");
                 }
+                return p;
             }
             else
             {
@@ -172,8 +174,6 @@ SIDEJACKING::pull(int port)
     {
         LOGE("Sidejacking: the DataModel is invalid for the data, field len %u", model.len());
     }
-
-    dealloc_event(_event);
 
     return p;
 }
