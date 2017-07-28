@@ -61,7 +61,7 @@ DNSTUNNELS::configure(Vector<String> &conf, ErrorHandler *errh)
 dnstunnels_record* 
 DNSTUNNELS::check_hostip_exist(uint32_t host_ip)
 {
-    dnstunnels_record *tmp = _record_head;
+    dnstunnels_record *tmp = _record_head->next;
 
     while(tmp)
     {

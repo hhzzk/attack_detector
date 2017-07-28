@@ -58,7 +58,7 @@ SIDEJACKING::initialize(ErrorHandler *errh)
 sidejacking_record* 
 SIDEJACKING::check_cookie_exist(char* cookie)
 {
-    sidejacking_record *tmp = _record_head;
+    sidejacking_record *tmp = _record_head->next;
 
     while(tmp)
     {
