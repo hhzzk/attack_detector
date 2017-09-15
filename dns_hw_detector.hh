@@ -1,5 +1,5 @@
-#ifndef CLICK_DNSTUNNELS_HH
-#define CLICK_DNSTUNNELS_HH
+#ifndef CLICK_DNS_HW_DETECTOR_HH
+#define CLICK_DNS_HW_DETECTOR_HH
 
 #include <click/timer.hh>
 #include <click/element.hh>
@@ -9,16 +9,16 @@ CLICK_DECLS
 #define PERCENTAGE_OF_COUNT 2
 #define QUERY_LEN_THRESHOLD 52
 
-class DNSTUNNELS : public Element {
+class DNS_HW_DETECTOR : public Element {
 
     int _anno;
 
   public:
 
-    DNSTUNNELS() CLICK_COLD;
-    ~DNSTUNNELS() CLICK_COLD;
+    DNS_HW_DETECTOR() CLICK_COLD;
+    ~DNS_HW_DETECTOR() CLICK_COLD;
 
-    const char *class_name() const		{ return "DNSTUNNELS"; }
+    const char *class_name() const		{ return "DNS_HW_DETECTOR"; }
     const char *port_count() const		{ return PORTS_1_1; }
 
     bool can_live_reconfigure() const		{ return true; }

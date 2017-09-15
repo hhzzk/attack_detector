@@ -1,5 +1,5 @@
 /*
- * DNSTUNNELS.{cc,hh} -- element used to detect dns tunnels attack 
+ * DNS_HW_DETECTOR.{cc,hh} -- element used to detect dns tunnels attack 
  * HHZZK 
  *
  * Copyright (c) 2017 HHZZK
@@ -28,27 +28,27 @@
 
 #include "event.hh"
 #include "datamodel.hh"
-#include "dnstunnels.hh"
+#include "dns_hw_detector.hh"
 #include "dnsanalyzer.hh"
 
 CLICK_DECLS
 
-DNSTUNNELS::DNSTUNNELS()
+DNS_HW_DETECTOR::DNS_HW_DETECTOR()
 {
 }
 
-DNSTUNNELS::~DNSTUNNELS()
+DNS_HW_DETECTOR::~DNS_HW_DETECTOR()
 {
 }
 
 int
-DNSTUNNELS::configure(Vector<String> &conf, ErrorHandler *errh)
+DNS_HW_DETECTOR::configure(Vector<String> &conf, ErrorHandler *errh)
 {
     return 0;
 }
 
 Packet *
-DNSTUNNELS::pull(int port)
+DNS_HW_DETECTOR::pull(int port)
 {
     Packet *p = input(0).pull();
     if(p == NULL)
@@ -57,18 +57,18 @@ DNSTUNNELS::pull(int port)
         return NULL;
     }
 
-    dnstunnels_record *record = NULL;
     event_t *_event = extract_event(p);
     DNSDataModel model(_event->data);
     if(model.validate(_event->data + _event->event_len))
     {
-        uint32_t ip = get_value<DNSDataModel, DNS_FIELD_RECORD_IP>(model);
+        //uint32_t ip = get_value<DNSDataModel, DNS_FIELD_RECORD_IP>(model);
         char *qname = get_field<DNSDataModel, DNS_FIELD_QNAME>(model);
 
         int query_len = strlen(qname);
         int i = 0;
         int num_count = 0;
         LOGE("query len is %d", query_len);
+        LOGE("query is %s", qname);
         if(query_len > QUERY_LEN_THRESHOLD)
         {
             for(i=0; i<query_len; i++)
@@ -92,5 +92,5 @@ DNSTUNNELS::pull(int port)
 }
 
 CLICK_ENDDECLS
-EXPORT_ELEMENT(DNSTUNNELS)
-ELEMENT_MT_SAFE(DNSTUNNELS)
+EXPORT_ELEMENT(DNS_HW_DETECTOR)
+ELEMENT_MT_SAFE(DNS_HW_DETECTOR)
