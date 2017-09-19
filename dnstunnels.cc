@@ -61,7 +61,7 @@ DNSTUNNELS::configure(Vector<String> &conf, ErrorHandler *errh)
 dnstunnels_record* 
 DNSTUNNELS::check_hostip_exist(uint32_t host_ip)
 {
-    dnstunnels_record *tmp = _record_head->next;
+    dnstunnels_record *tmp = _record_head;
 
     while(tmp)
     {
@@ -123,10 +123,8 @@ DNSTUNNELS::pull(int port)
     Packet *p = input(0).pull();
     if(p == NULL)
     {
-        LOGE("Package is null");
         return NULL;
     }
-
     dnstunnels_record *record = NULL;
     event_t *_event = extract_event(p);
     DNSDataModel model(_event->data);
@@ -149,7 +147,7 @@ DNSTUNNELS::pull(int port)
             return p;
         }
         //Check if the record is expired
-        if((uint32_t)Timestamp::now().sec() - record->create_time > EXPIRATION)
+        if((uint32_t)Timestamp::now().sec() - record->create_time > DNSTUNNELS_EXPIRATION)
         {
             delete_record(record);
             LOGE("record deleted!");
@@ -170,7 +168,7 @@ DNSTUNNELS::pull(int port)
             int i = 0;
             int num_count = 0;
             LOGE("query len is %d", query_len);
-            if(query_len > QUERY_LEN_THRESHOLD)
+            if(query_len > DNSTUNNELS_QUERY_LEN_THRESHOLD)
             {
                 for(i=0; i<query_len; i++)
                 {

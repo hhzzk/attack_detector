@@ -14,10 +14,10 @@ typedef struct dnstunnels_record
     dnstunnels_record* next;
 }dnstunnels_record; 
 
-#define EXPIRATION 100
+#define DNSTUNNELS_EXPIRATION 100
 #define COUNT_THRESHOLD 100
 #define PERCENTAGE_OF_COUNT 2
-#define QUERY_LEN_THRESHOLD 52
+#define DNSTUNNELS_QUERY_LEN_THRESHOLD 27
 #define REQUEST_COUNT_THRESHOLD 100
 
 class DNSTUNNELS : public Element {

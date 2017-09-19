@@ -14,7 +14,6 @@ typedef struct sidejacking_record
 
 #define PROTOCOL_SSH 2222
 #define PROTOCOL_IRC 6697
-#define EXPIRATION 30
 #define DHCP_CONTEXT_AVALIABLE 0
 
 class SIDEJACKING : public Element {
